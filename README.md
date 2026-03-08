@@ -1,16 +1,70 @@
 # Early-ROAS-Prediction-Analysis
 Predicting 30-day LTV and ROAS using early user behavior (D3) with BigQuery &amp; XGBoost.
 
-**Veriyle Geleceği Görmek**: Mobil Oyunlarda D30 ROAS Tahminlemesi
+#  Early ROAS Prediction & LTV Modeling for Mobile Gaming
 
-Ajans bünyesinde çalıştığımız bir mobil oyun müşterimiz için, pazarlama bütçesini daha verimli kullanabilmek adına heyecan verici bir 'Early Prediction' projesini tamamladık.
+![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![BigQuery](https://img.shields.io/badge/Google_BigQuery-SQL-yellow.svg)
+![XGBoost](https://img.shields.io/badge/XGBoost-Machine_Learning-green.svg)
+![Status](https://img.shields.io/badge/Status-Completed-success.svg)
 
-Sorun: Müşterimiz, hangi reklam kanalının gerçekten kârlı olduğunu anlamak için 30 gün beklemek zorundaydı. Bu da bütçenin verimsiz harcanmasına neden olabiliyordu.
+##  Proje Özeti (Business Context)
+Ajans bünyesinde çalıştığımız bir mobil oyun müşterimiz için, pazarlama bütçesini daha verimli kullanabilmek adına geliştirilmiş uçtan uca (end-to-end) bir makine öğrenmesi ve veri mühendisliği projesidir.
 
-Çözüm: Google BigQuery üzerinde milyonlarca satır ham Firebase logunu işleyerek bir veri boru hattı kurduk. Kullanıcıların oyunu indirdikleri andan itibaren ilk 72 saat içindeki davranışlarını (tamamlanan bölümler, teknik hatalar, rekabetçi skorlar) anlamlı metrikler haline getirdik.
+**Sorun:** Müşterimiz, hangi reklam kanalının gerçekten kârlı olduğunu anlamak için 30 gün beklemek zorundaydı. Bu durum, bütçenin verimsiz harcanmasına ve kârsız kampanyaların gereksiz yere açık kalmasına neden oluyordu.
+**Çözüm:** Kullanıcıların oyunu indirdikleri andan itibaren **ilk 72 saat (Day 3)** içindeki davranışlarını analiz ederek, **30. gün (Day 30)** sonundaki satın alma (ROAS - LTV) potansiyellerini önceden tahmin eden bir sistem kurgulanmıştır.
 
-Teknik Zorluk: Mobil oyun dünyasının gerçeği olan 'aşırı dengesiz veri' (kullanıcıların %1'inden azının harcama yapması) ile karşılaştık. XGBoost modelimizi scale_pos_weight ve Precision-Recall optimizasyonlarıyla eğiterek, sistemin 'balina' kullanıcıları tespit etme kapasitesini artırdık.
+> **Gizlilik Notu:** Müşteri gizliliğini (KVKK/GDPR) korumak adına tüm kullanıcı kimlikleri (user_pseudo_id) ve hassas iş metrikleri maskelenmiş/anonimize edilmiştir. Proje, kişisel verilerden ziyade tamamen davranışsal örüntülere odaklanmaktadır.
 
-Sonuç: Bu model sayesinde, henüz 3. günün sonunda hangi kullanıcı kitlesinin kârlı olacağını tahmin edebilir hale geldik. Bu, müşterimize reklam kampanyalarını gerçek zamanlı olarak optimize etme ve zarar eden kanalları anında kapatma imkanı sağladı.
+---
 
-Veri odaklı pazarlama, sadece harcamak değil, nereye harcayacağını önceden bilmektir! 
+##  Kullanılan Teknolojiler
+* **Veri Ambarı & SQL:** Google BigQuery, Standard SQL (Nested Records, CTEs, Window Functions)
+* **Veri Manipülasyonu:** Pandas, NumPy
+* **Makine Öğrenmesi:** XGBoost (eXtreme Gradient Boosting), Scikit-Learn
+* **Veri Görselleştirme:** Matplotlib, Seaborn
+
+---
+
+##  Veri Boru Hattı (Data Pipeline) ve Mimari
+
+Firebase Analytics üzerinden akan saniyelik loglar (NoSQL yapısı), BigQuery üzerinde SQL ile işlenerek düz (tabular) bir makine öğrenmesi matrisine dönüştürülmüştür.
+
+1. **Zaman Makinesi (Cohort Analysis):** Milyonlarca log taranarak her kullanıcının oyunu ilk açtığı `first_open` anı (T=0) mikrosaniye cinsinden tespit edildi.
+2. **Özellik Çıkarımı (Feature Engineering):** BigQuery'nin `UNNEST` fonksiyonu kullanılarak iç içe geçmiş (nested) JSON formatındaki loglardan anlamlı özellikler çıkarıldı.
+   * `d3_total_events`: Toplam uygulama içi etkileşim.
+   * `d3_levels_completed`: İlk 3 günde geçilen bölüm sayısı.
+   * `d3_errors`: Karşılaşılan teknik hatalar (`app_exception`).
+   * `d3_max_score`: Rekabetçilik göstergesi olan maksimum skor.
+3. **Hedef Değişken (Target Labeling):** 30. günün sonunda `in_app_purchase` (uygulama içi satın alma) yapan kullanıcılar `1`, yapmayanlar `0` olarak etiketlendi.
+
+---
+
+##  Makine Öğrenmesi Yaklaşımı ve Zorluklar
+
+Mobil oyun dünyasının en büyük gerçeği olan **"Aşırı Dengesiz Veri" (Highly Imbalanced Dataset)** bu projenin temel zorluğuydu. Kullanıcıların %1'inden azı harcama yapma (balina) eğilimindeydi.
+
+* **Algoritma Seçimi:** Dengesiz verilerdeki üstün performansı sebebiyle **XGBoost Classifier** tercih edildi.
+* **Optimizasyon:** Sınıf dengesizliğini çözmek için XGBoost modeline hiperparametre olarak otomatik hesaplanan `scale_pos_weight` uygulandı.
+* **Metrik Seçimi:** Sistem %99 oranında "0" sınıfından oluştuğu için yanıltıcı olan *Accuracy* (Doğruluk) metriği yerine, işletme hedeflerine uygun olarak **Precision-Recall (Kesinlik-Duyarlılık)** ve **PR-AUC** metriklerine odaklanıldı.
+
+---
+
+##  Depo Yapısı (Repository Structure)
+
+```text
+Early-ROAS-Prediction/
+│
+├── sql_queries/               # BigQuery veri mühendisliği sorguları
+│   ├── 01_user_cohort.sql     # T=0 anının tespiti
+│   ├── 02_d3_features.sql     # D3 davranışsal özellik çıkarımı (UNNEST)
+│   ├── 03_target_roas.sql     # D30 satın alma durumu (Hedef)
+│   └── 04_master_table.sql    # Nihai ML matrisinin birleştirilmesi
+│
+├── notebooks/                 # Keşifsel Veri Analizi ve Modelleme
+│   └── Early_roas_prediction_model.ipynb
+│
+├── data/                      # Model şablonunu göstermek için maskelenmiş sample veri
+│   └── 04_master_table.csv
+│
+└── README.md
