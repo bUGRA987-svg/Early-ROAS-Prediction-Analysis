@@ -68,3 +68,15 @@ Early-ROAS-Prediction/
 │   └── 04_master_table.csv
 │
 └── README.md
+
+**Sonuç ve İş Etkisi:**
+Bu modelleme çalışması, pazarlama ve büyüme (Growth) ekiplerine şu yetenekleri kazandırmayı hedefler:
+
+Kampanya kalitesini 30 gün yerine 3. günün sonunda değerlendirebilmek.
+
+Düşük ROAS getirecek reklam kanallarını erkenden kapatıp bütçe israfını önlemek.
+
+"Potansiyel alıcı" olarak tahmin edilen kullanıcılara özel oyun içi teklifler (in-app offers) sunarak dönüşüm oranlarını (Conversion Rate) artırmak.
+
+Geliştirici: Buğra Avsar
+Linkedin : https://www.linkedin.com/in/bugra-avsar/
